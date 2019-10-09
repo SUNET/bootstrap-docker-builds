@@ -418,7 +418,6 @@ def runJob(job_env) {
         }
         if (job_env.copy_artifacts != null) {
             stage("Copy artifacts") {
-                echo("Copy artifacts from ${job_env.copy_artifacts.project_name} configured")
                 def args = [
                     projectName: job_env.copy_artifacts.project_name,
                     selector: lastSuccessful(),
@@ -441,35 +440,34 @@ def runJob(job_env) {
         if (job_env.pre_build_script != null) {
             stage("Pre build script") {
                 sh(job_env.pre_build_script.join('\n'))
-                echo('Pre-build script configured.')
             }
         }
-        if (!job_env.builders.disjoint(["script", "make", "python"])) {
-            stage("build script/make/python") {
-                // Mutually exclusive builder steps
-                if (job_env.builders.contains("script")) {
-                    echo('Builder "script" configured.')
-                    // This is expected to be run in the same shell,
-                    // So enviorment-modifications carry over between lines in yaml.
-                    sh(job_env.script.join('\n'))
-                } else if (job_env.builders.contains("make")) {
-                    echo('Builder "make" configured.')
-                    sh("make clean && make && make test")
-                } else if (job_env.builders.contains("cmake")) {
-                    echo('Builder "cmake" configured.')
-                    sh("/opt/builders/cmake")
-                } else if (job_env.builders.contains("python")) {
-                    echo('Builder "python" configured.')
-                    def python_module = job_env.name
-                    if (job_env.python_module != null) {
-                        python_module = job_env.python_module
-                    }
-                    sh("/opt/builders/python ${python_module} ${job_env.python_source_directory}")
+        // Mutually exclusive builder steps
+        if (job_env.builders.contains("script")) {
+            stage("builder script") {
+                // This is expected to be run in the same shell,
+                // So job_env-modifications carry over between lines in yaml.
+                sh(job_env.script.join('\n'))
+            }
+        } else if (job_env.builders.contains("make")) {
+            stage("builder make") {
+                sh("make clean && make && make test")
+            }
+        } else if (job_env.builders.contains("cmake")) {
+            stage("builder cmake") {
+                sh("/opt/builders/cmake")
+            }
+        } else if (job_env.builders.contains("python")) {
+            stage("builder python") {
+                def python_module = job_env.name
+                if (job_env.python_module != null) {
+                    python_module = job_env.python_module
                 }
+                sh("/opt/builders/python ${python_module} ${job_env.python_source_directory}")
             }
         }
         if (job_env.builders.contains("docker")) {
-            stage("build docker") {
+            stage("builder docker") {
                 if (_managed_script_enabled(job_env, 'docker_build_prep.sh')) {
                     echo("Managed script docker_build_prep.sh enabled.")
                     configFileProvider([configFile(fileId: 'docker_build_prep.sh', variable: 'DOCKER_BUILD_PREP')]) {
@@ -512,13 +510,11 @@ def runJob(job_env) {
                     createFingerprints(_get_bool(job_env.docker_create_fingerprints, true))
                 }*/
                 step(docker_build_and_publish)
-                echo('Builder "docker" configured.')
             }
         }
         if (job_env.post_build_script != null) {
             stage("Post build script") {
                 sh(job_env.post_build_script.join('\n'))
-                echo('Post-build script configured.')
             }
         }
         if (job_env.downstream != null && job_env.downstream.size() > 0) {
