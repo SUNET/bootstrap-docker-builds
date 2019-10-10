@@ -1,5 +1,6 @@
 // vim: ts=4 sts=4 sw=4 et
 import java.security.SignatureException
+import java.io.IOException
 
 // Used for merging .jenkins.yaml in to default env
 def addNested(lhs, rhs) {
@@ -96,104 +97,128 @@ def repo_must_be_signed(full_name) {
 }
 
 def load_env() {
-    // Default environment
-    def env = [
-        'name'                   : JOB_BASE_NAME,
-        'full_name'              : FULL_NAME.toLowerCase(),
-        'repo_full_name'         : FULL_NAME, // Jenkins is not case insensitive with push notifications
-        'repo_must_be_signed'    : repo_must_be_signed(FULL_NAME),
-        'disabled'               : false,
-        'git'                    : [:],
-        'environment_variables'  : [:],
-        'python_source_directory': 'src',
-        'slack'                  : ['room': 'devops-builds', 'disabled': false],
-        'triggers'               : [:],
-        'builders'               : [],
-        'docker_name'            : FULL_NAME.toLowerCase(),
-        'build_in_docker'        : [
-            'disabled': false,
-            'dockerfile': null,
-            'image': null,
-            'start_command': "/run.sh"
-        ]
-    ]
+    stage("load_env") {
+        node {
+            def args = [
+                $class: 'GitSCM',
+                userRemoteConfigs: [[url: "https://github.com/${FULL_NAME}.git"]],
+                branches: [[name: '*/master']],
+                extensions: [
+                    [$class: 'CheckoutOption'],
+                    [$class: 'CloneOption',
+                        depth: 1,
+                        noTags: true,
+                        reference: '',
+                        shallow: true
+                    ],
+                    // FIXME: Is this worth it? to keep these in sync?
+                    [$class: 'SparseCheckoutPaths', sparseCheckoutPaths: [
+                            [path: '.jenkins.yaml'],
+                            [path: 'Dockerfile'],
+                            [path: 'setup.py'],
+                            [path: 'CMakeLists.txt'],
+                            [path: 'Dockerfile.jenkins']
+                        ]
+                    ]
+                ],
+                doGenerateSubmoduleConfigurations: false,
+                submoduleCfg: [],
+            ]
+            def scmVars = checkout(changelog: false, poll: false, scm: args)
 
-    // Load enviroment variables from repo yaml file
-    try {
-        // Check if github says the branch is signed before reading .jenkins.yaml from it.
-        if (repo_must_be_signed(FULL_NAME) && !is_github_branch_signed(FULL_NAME, "master")) {
-            throw new SignatureException("Repo not SIGNED!")
-        }
-        def yaml_text = try_get_file(_repo_file(env.repo_full_name, "master", ".jenkins.yaml"))
-        // Mangle broken yaml into something a propper yaml parser stands
-        def fixed_yaml_text = yaml_text.replaceAll('cron: (@\\w+)', 'cron: "$1"')
-        if (yaml_text != fixed_yaml_text)
-            echo("FIXME: This repo contains non compliant yaml")
-        def repo_env = readYaml(text: fixed_yaml_text)
-        env = addNested(env, repo_env)
-    } catch (FileNotFoundException ex) {
-        echo("No .jenkins.yaml for ${env.full_name}... will use defaults")
-    }
+            // Default environment
+            def env = [
+                'name'                   : JOB_BASE_NAME,
+                'full_name'              : FULL_NAME.toLowerCase(),
+                'repo_full_name'         : FULL_NAME, // Jenkins is not case insensitive with push notifications
+                'repo_must_be_signed'    : repo_must_be_signed(FULL_NAME),
+                'disabled'               : false,
+                'git'                    : [:],
+                'environment_variables'  : [:],
+                'python_source_directory': 'src',
+                'slack'                  : ['room': 'devops-builds', 'disabled': false],
+                'triggers'               : [:],
+                'builders'               : [],
+                'docker_name'            : FULL_NAME.toLowerCase(),
+                'build_in_docker'        : [
+                    'disabled': false,
+                    'dockerfile': null,
+                    'image': null,
+                    'start_command': "/run.sh"
+                ]
+            ]
 
-    // detecting builders
-    if (env.builder != null && env.builders.size() == 0) {
-        echo("DEPRECATION WARNING. Use builders.")
-        echo("Builder ${env.builder} found for ${env.full_name}, added to builders")
-        env.builders += env.builder
-    }
+            // Load enviroment variables from repo yaml file
+            try {
+                // Check if github says the branch is signed before reading .jenkins.yaml from it.
+                if (repo_must_be_signed(FULL_NAME) && !is_github_branch_signed(FULL_NAME, "master")) {
+                    throw new SignatureException("Repo not SIGNED!")
+                }
 
-    // If builder or builders is empty try to guess
-    if (env.builders == null || env.builders.size() == 0) {
-        echo("No builders found for ${env.full_name}... trying to guess")
-        env.builders = []
-
-        try {
-            if (try_get_file(_repo_file(env.repo_full_name, "master", "Dockerfile"))) {
-                echo("Found Dockerfile for ${env.full_name}. Adding \"docker\" to builders.")
-                env.builders += "docker"
+                def yaml_text = readFile(".jenkins.yaml")
+                // Mangle broken yaml into something a propper yaml parser stands
+                def fixed_yaml_text = yaml_text.replaceAll('cron: (@\\w+)', 'cron: "$1"')
+                if (yaml_text != fixed_yaml_text)
+                    echo("FIXME: This repo contains non compliant yaml")
+                def repo_env = readYaml(text: fixed_yaml_text)
+                env = addNested(env, repo_env)
+            } catch (IOException ex) {
+                echo("No .jenkins.yaml for ${env.full_name}... will use defaults")
             }
-        } catch (FileNotFoundException ex) { }
 
-        try {
-            if (try_get_file(_repo_file(env.repo_full_name, "master", "setup.py")).contains("python")) {
-                echo("Found setup.py for ${env.full_name}. Adding \"python\" to builders.")
-                env.builders += "python"
+            // detecting builders
+            if (env.builder != null && env.builders.size() == 0) {
+                echo("DEPRECATION WARNING. Use builders.")
+                echo("Builder ${env.builder} found for ${env.full_name}, added to builders")
+                env.builders += env.builder
             }
-        } catch (FileNotFoundException ex) { }
 
-        if (env.script != null) {
-            echo("script set for ${env.full_name}. Adding \"script\" to builders.")
-            env.builders += "script"
-        }
+            // If builder or builders is empty try to guess
+            if (env.builders == null || env.builders.size() == 0) {
+                echo("No builders found for ${env.full_name}... trying to guess")
+                env.builders = []
 
-        try {
-            if (try_get_file(_repo_file(env.repo_full_name, "master", "CMakeLists.txt"))) {
-                echo("Found CMakeLists.txt for ${env.full_name}. Adding \"cmake\" to builders.")
-                env.builders += "cmake"
+                if (fileExists("Dockerfile")) {
+                    echo("Found Dockerfile for ${env.full_name}. Adding \"docker\" to builders.")
+                    env.builders += "docker"
+                }
+
+                if (fileExists("setup.py")) {
+                    echo("Found setup.py for ${env.full_name}. Adding \"python\" to builders.")
+                    env.builders += "python"
+                }
+
+                if (env.script != null) {
+                    echo("script set for ${env.full_name}. Adding \"script\" to builders.")
+                    env.builders += "script"
+                }
+
+                if (fileExists("CMakeLists.txt")) {
+                    echo("Found CMakeLists.txt for ${env.full_name}. Adding \"cmake\" to builders.")
+                    env.builders += "cmake"
+                }
             }
-        } catch (FileNotFoundException ex) { }
-    }
 
-    // detecting wrappers
-    try {
-        if (try_get_file(_repo_file(env.repo_full_name, "master", "Dockerfile.jenkins")).contains("FROM")) {
-            echo("Found Dockerfile.jenkins for ${env.full_name}. Will be used for build.")
-            env.build_in_docker.dockerfile = "Dockerfile.jenkins"
+            // detecting wrappers
+            if (fileExists("Dockerfile.jenkins")) {
+                echo("Found Dockerfile.jenkins for ${env.full_name}. Will be used for build.")
+                env.build_in_docker.dockerfile = "Dockerfile.jenkins"
+            }
+
+            if (env.build_in_docker.dockerfile == null && env.build_in_docker.image == null) {
+                echo("No explicit build in docker settings found for ${env.full_name}. Will use docker.sunet.se/sunet/docker-jenkins-job.")
+                env.build_in_docker.image = "docker.sunet.se/sunet/docker-jenkins-job"
+            } else {
+                if (env.build_in_docker.dockerfile != null) {
+                    echo("Using dockerfile ${env.build_in_docker.dockerfile} to build ${env.full_name}.")
+                } else {
+                    echo("Using image ${env.build_in_docker.image} to build ${env.full_name}.")
+                }
+            }
+
+            return env
         }
-    } catch (FileNotFoundException ex) { }
-
-    if (env.build_in_docker.dockerfile == null && env.build_in_docker.image == null) {
-        echo("No explicit build in docker settings found for ${env.full_name}. Will use docker.sunet.se/sunet/docker-jenkins-job.")
-        env.build_in_docker.image = "docker.sunet.se/sunet/docker-jenkins-job"
-    } else {
-        if (env.build_in_docker.dockerfile != null) {
-            echo("Using dockerfile ${env.build_in_docker.dockerfile} to build ${env.full_name}.")
-        } else {
-            echo("Using image ${env.build_in_docker.image} to build ${env.full_name}.")
-        }
     }
-
-    return env
 }
 
 def is_github_branch_signed(repo_full_name, branch) {
