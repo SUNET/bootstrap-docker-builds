@@ -571,12 +571,14 @@ def runJob(job_env) {
     }
 }
 
-if (docker_image) {
-    dockerNode(image: docker_image) {
-        runJob(job_env)
-    }
-} else {
-    node() {
-        runJob(job_env)
+ansiColor('xterm') {
+    if (docker_image) {
+        dockerNode(image: docker_image) {
+            runJob(job_env)
+        }
+    } else {
+        node() {
+            runJob(job_env)
+        }
     }
 }
