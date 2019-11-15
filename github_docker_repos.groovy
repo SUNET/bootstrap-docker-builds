@@ -596,6 +596,10 @@ for (org in orgs) {
                 if (ONLY_REPOS && !ONLY_REPOS.contains(name))
                     return // return is like continue in a closure
                 out.println("repo: ${name}")
+                if (it.archived) {
+                    out.println("Skipping archived repo")
+                    return // return is like continue in a closure
+                }
                 try {
                     if (name != null && full_name != null && name != "null" && full_name != "null") {
                         env = load_env(it)
