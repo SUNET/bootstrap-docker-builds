@@ -733,5 +733,24 @@ listView("se-leg") {
     }
 }
 
+freeStyleJob('promote-image') {
+    disabled()
+    description("A job to manually promote a docker image from one name to another")
+    if (jenkins.model.Jenkins.instance.getPluginManager().getPlugin('build-user-vars-plugin')) {
+        wrappers {
+            buildUserVars()
+        }
+    }
+    parameters {
+        stringParam('IMAGE_NAME', null, 'The image name to promote, ex: docker.sunet.se/sunet/docker-jenkins-job')
+        stringParam('SOURCE_TAG', 'latest', 'The current tag of the image to promote')
+        stringParam('TARGET_TAG', 'stable', 'The target tag to promote the image to, ex: stable')
+        booleanParam('TAG_PREVIOUS', true, 'Create a previous-$TARGET_TAG of the old $TARGET_TAG')
+    }
+    steps {
+        shell(readFileFromWorkspace("promote-image.sh"))
+    }
+}
+
 if (failure_in_repos)
     SEED_JOB.getLastBuild().setResult(hudson.model.Result.UNSTABLE)
