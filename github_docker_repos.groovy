@@ -500,10 +500,10 @@ def add_job(env, is_dev_mode) {
                         pushCredentialsId('')
                         cleanImages(true)
                         cleanupWithJenkinsJobDelete(true)
+                        pull(is_dev_mode ? false : _get_bool(env.docker_force_pull, true))
+                        noCache(_get_bool(env.docker_no_cache, true))
                     }
                     /* TODO: things not implemented in docker-plugin
-                        forcePull(is_dev_mode ? false : _get_bool(env.docker_force_pull, true))
-                        noCache(_get_bool(env.docker_no_cache, true))
                         forceTag(_get_bool(env.docker_force_tag, false))
                         createFingerprints(_get_bool(env.docker_create_fingerprints, true))
                     */
