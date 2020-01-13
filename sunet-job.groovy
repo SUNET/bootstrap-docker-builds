@@ -85,11 +85,15 @@ def _get_int(value, default_value) {
     return default_value.toInteger()
 }
 
+// groovy.lang.MapWithDefault NotSerializable , so use it only in a helper function
+@NonCPS
+def repo_must_be_signed(full_name) {
+    def repo_must_be_signed = [:].withDefault{ false }
+    repo_must_be_signed["SUNET/docker-jenkins"] = true
+    repo_must_be_signed["SUNET/docker-jenkins-job"] = true
 
-repo_must_be_signed = [:].withDefault{ false }
-repo_must_be_signed["SUNET/docker-jenkins"] = true
-repo_must_be_signed["SUNET/docker-jenkins-job"] = true
-
+    return repo_must_be_signed[full_name]
+}
 
 def load_env() {
     // Default environment
@@ -97,7 +101,7 @@ def load_env() {
         'name'                   : JOB_BASE_NAME,
         'full_name'              : FULL_NAME.toLowerCase(),
         'repo_full_name'         : FULL_NAME, // Jenkins is not case insensitive with push notifications
-        'repo_must_be_sighed'    : repo_must_be_signed[FULL_NAME],
+        'repo_must_be_signed'    : repo_must_be_signed(FULL_NAME),
         'disabled'               : false,
         'git'                    : [:],
         'environment_variables'  : [:],
@@ -117,7 +121,7 @@ def load_env() {
     // Load enviroment variables from repo yaml file
     try {
         // Check if github says the branch is signed before reading .jenkins.yaml from it.
-        if (repo_must_be_signed[env.repo_full_name] && !is_github_branch_signed(env.repo_full_name, "master")) {
+        if (repo_must_be_signed(env.repo_full_name) && !is_github_branch_signed(env.repo_full_name, "master")) {
             throw new SignatureException("Repo not SIGNED!")
         }
         def yaml_text = try_get_file(_repo_file(env.repo_full_name, "master", ".jenkins.yaml"))
