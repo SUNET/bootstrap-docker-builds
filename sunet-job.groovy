@@ -375,6 +375,16 @@ node {
             scmVars = checkout(args)
             // ['GIT_BRANCH':'origin/master', 'GIT_COMMIT':'8408762af61447e38a832513e595a518d81bf9af', 'GIT_PREVIOUS_COMMIT':'8408762af61447e38a832513e595a518d81bf9af', 'GIT_PREVIOUS_SUCCESSFUL_COMMIT':'dcea3f3567b7f55bc7a1a2f3d6752c084cc9b694', 'GIT_URL':'https://github.com/glance-/docker-goofys.git']
         }
+        if (env.repo_must_be_signed) {
+            // Only run code which we can validate
+            stage("Verify signature") {
+                configFileProvider([configFile(fileId: 'GPG_WRAPPER', variable: 'GPG_WRAPPER')]) {
+                    withCredentials([file(credentialsId: 'GNUPG_KEYRING', variable: 'GNUPG_KEYRING')]) {
+                        sh('chmod +x "$GPG_WRAPPER" && git -c "gpg.program=$GPG_WRAPPER" verify-commit HEAD')
+                    }
+                }
+            }
+        }
         if (env.copy_artifacts != null) {
             stage("Copy artifacts") {
                 echo("Copy artifacts from ${env.copy_artifacts.project_name} configured")
