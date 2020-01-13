@@ -376,6 +376,13 @@ node {
             // ['GIT_BRANCH':'origin/master', 'GIT_COMMIT':'8408762af61447e38a832513e595a518d81bf9af', 'GIT_PREVIOUS_COMMIT':'8408762af61447e38a832513e595a518d81bf9af', 'GIT_PREVIOUS_SUCCESSFUL_COMMIT':'dcea3f3567b7f55bc7a1a2f3d6752c084cc9b694', 'GIT_URL':'https://github.com/glance-/docker-goofys.git']
         }
         if (env.repo_must_be_signed) {
+            /* TODO: Now when we run pipeline, rewrite the code so we:
+            1 first checkout
+            2 then validate repo
+            3 then parse .jenkins.yml
+
+            And not trust github signature flag to validate before .jenkins.yml parsing.
+            */
             // Only run code which we can validate
             stage("Verify signature") {
                 configFileProvider([configFile(fileId: 'GPG_WRAPPER', variable: 'GPG_WRAPPER')]) {
