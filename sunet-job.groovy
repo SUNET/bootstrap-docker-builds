@@ -197,11 +197,10 @@ def load_env() {
 }
 
 def is_github_branch_signed(repo_full_name, branch) {
-    def js = new JsonSlurper()
     def ref = try_get_file("https://api.github.com/repos/${repo_full_name}/git/ref/heads/${branch}")
-    ref = js.parseText(ref)
+    ref = readJSON(text: ref)
     def commit = try_get_file(ref["object"]["url"])
-    commit = js.parseText(commit)
+    commit = readJSON(text: commit)
     return commit["verification"]["verified"]
 }
 
