@@ -356,7 +356,9 @@ node {
             }
             jobDsl(
                 failOnMissingPlugin: true,
-                failOnSeedCollision: true,
+                //failOnSeedCollision: true,
+                // Why do job-dsl think we conflict with bootstrap? are template copying seed info?
+                failOnSeedCollision: false,
                 lookupStrategy: 'SEED_JOB',
                 removedConfigFilesAction: 'DELETE',
                 removedJobAction: 'DELETE',
