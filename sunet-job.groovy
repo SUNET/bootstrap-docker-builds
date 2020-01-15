@@ -91,7 +91,15 @@ def load_env() {
                 doGenerateSubmoduleConfigurations: false,
                 submoduleCfg: [],
             ]
-            def scmVars = checkout(changelog: false, poll: false, scm: args)
+            try {
+                checkout(changelog: false, poll: false, scm: args)
+            } catch (hudson.plugins.git.GitException ex) {
+                // hudson.plugins.git.GitException: Command "git checkout -f 5306295ed1f2ca866cd108516aaedb3b2f055e43" returned status code 128:
+                // stderr: error: Sparse checkout leaves no entry on working directory
+
+                // No config found, nor no things to guess config from.
+                // We let things have its path, and we will return NOT_BUILT a tad later
+            }
 
             // Default environment
             def env = [
