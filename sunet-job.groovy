@@ -276,6 +276,15 @@ if (_build_in_docker(job_env)) {
         docker_image = "docker.sunet.se/sunet/docker-jenkins-job"
     }
     /* Buu, doesn't work. Use dockerNode() instead
+
+    We might use patched docker-plugin so we can pass in a whole dockerTemplateBase
+    to dockerNode()...
+    https://github.com/glance-/docker-plugin/tree/DockerTemplateBase
+
+    The only thing that we might need that for is if we need to run
+    docker images from inside another image than our regular
+    docker.sunet.se/sunet/docker-jenkins-job
+
     property_list += [
         $class: "DockerJobTemplateProperty",
         template: [
