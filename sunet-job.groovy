@@ -121,7 +121,7 @@ def load_env() {
     // Load enviroment variables from repo yaml file
     try {
         // Check if github says the branch is signed before reading .jenkins.yaml from it.
-        if (repo_must_be_signed(env.repo_full_name) && !is_github_branch_signed(env.repo_full_name, "master")) {
+        if (repo_must_be_signed(FULL_NAME) && !is_github_branch_signed(FULL_NAME, "master")) {
             throw new SignatureException("Repo not SIGNED!")
         }
         def yaml_text = try_get_file(_repo_file(env.repo_full_name, "master", ".jenkins.yaml"))
@@ -401,7 +401,7 @@ def runJob(job_env) {
             scmVars = checkout(args)
             // ['GIT_BRANCH':'origin/master', 'GIT_COMMIT':'8408762af61447e38a832513e595a518d81bf9af', 'GIT_PREVIOUS_COMMIT':'8408762af61447e38a832513e595a518d81bf9af', 'GIT_PREVIOUS_SUCCESSFUL_COMMIT':'dcea3f3567b7f55bc7a1a2f3d6752c084cc9b694', 'GIT_URL':'https://github.com/glance-/docker-goofys.git']
         }
-        if (job_env.repo_must_be_signed) {
+        if (repo_must_be_signed(FULL_NAME)) {
             /* TODO: Now when we run pipeline, rewrite the code so we:
             1 first checkout
             2 then validate repo
