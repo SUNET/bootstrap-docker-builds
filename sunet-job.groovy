@@ -1,43 +1,10 @@
 // vim: ts=4 sts=4 sw=4 et
-import java.security.SignatureException
 import java.io.IOException
 
 // Used for merging .jenkins.yaml in to default env
 def addNested(lhs, rhs) {
     rhs.each { k, v -> lhs[k] = lhs[k] in Map ? addNested(lhs[k], v) : v }
     return lhs
-}
-
-// https://stackoverflow.com/questions/7087185/retry-after-exception-in-groovy
-def retry_get_file(int times = 5, Closure errorHandler = {e-> echo(e.message)}, Closure body) {
-    int retries = 0
-    def exceptions = []
-    while(retries++ < times) {
-        try {
-            return body.call()
-        } catch(SocketException e) {
-            exceptions << e
-            errorHandler.call(e)
-            sleep(retries * 1000)  // Incremental backoff, +1s per try
-        }
-    }
-    throw new RuntimeException("Failed getting file after $times retries")
-}
-
-def try_get_file(url) {
-    retry_get_file(10) {
-        if (!(url instanceof URL))
-            url = url.toURL()
-        def conn = url.openConnection()
-        // So you don't run into the request api request limit as quickly...
-        if (binding.hasVariable("GITHUB_TOKEN") && "${GITHUB_TOKEN}" != "" && url.getHost() == 'api.github.com')
-            conn.addRequestProperty("Authorization", "token ${GITHUB_TOKEN}")
-        return conn.getInputStream().getText()
-    }
-}
-
-def _repo_file(full_name, branch, fn) {
-    return "https://raw.githubusercontent.com/${full_name}/${branch}/${fn}"
 }
 
 def _is_disabled(env) {
@@ -148,13 +115,18 @@ def load_env() {
                 ]
             ]
 
+            // Check signature in git before reading from it.
+            if (repo_must_be_signed(FULL_NAME)) {
+                echo "Verifying signature before reading anything from the repo"
+                configFileProvider([configFile(fileId: 'GPG_WRAPPER', variable: 'GPG_WRAPPER')]) {
+                    withCredentials([file(credentialsId: 'GNUPG_KEYRING', variable: 'GNUPG_KEYRING')]) {
+                        sh('chmod +x "$GPG_WRAPPER" && git -c "gpg.program=$GPG_WRAPPER" verify-commit HEAD')
+                    }
+                }
+            }
+
             // Load enviroment variables from repo yaml file
             try {
-                // Check if github says the branch is signed before reading .jenkins.yaml from it.
-                if (repo_must_be_signed(FULL_NAME) && !is_github_branch_signed(FULL_NAME, "master")) {
-                    throw new SignatureException("Repo not SIGNED!")
-                }
-
                 def yaml_text = readFile(".jenkins.yaml")
                 // Mangle broken yaml into something a propper yaml parser stands
                 def fixed_yaml_text = yaml_text.replaceAll('cron: (@\\w+)', 'cron: "$1"')
@@ -219,14 +191,6 @@ def load_env() {
             return env
         }
     }
-}
-
-def is_github_branch_signed(repo_full_name, branch) {
-    def ref = try_get_file("https://api.github.com/repos/${repo_full_name}/git/ref/heads/${branch}")
-    ref = readJSON(text: ref)
-    def commit = try_get_file(ref["object"]["url"])
-    commit = readJSON(text: commit)
-    return commit["verification"]["verified"]
 }
 
 // No def, global
@@ -427,14 +391,7 @@ def runJob(job_env) {
             // ['GIT_BRANCH':'origin/master', 'GIT_COMMIT':'8408762af61447e38a832513e595a518d81bf9af', 'GIT_PREVIOUS_COMMIT':'8408762af61447e38a832513e595a518d81bf9af', 'GIT_PREVIOUS_SUCCESSFUL_COMMIT':'dcea3f3567b7f55bc7a1a2f3d6752c084cc9b694', 'GIT_URL':'https://github.com/glance-/docker-goofys.git']
         }
         if (repo_must_be_signed(FULL_NAME)) {
-            /* TODO: Now when we run pipeline, rewrite the code so we:
-            1 first checkout
-            2 then validate repo
-            3 then parse .jenkins.yml
-
-            And not trust github signature flag to validate before .jenkins.yml parsing.
-            */
-            // Only run code which we can validate
+            // Only build code which we can validate
             stage("Verify signature") {
                 configFileProvider([configFile(fileId: 'GPG_WRAPPER', variable: 'GPG_WRAPPER')]) {
                     withCredentials([file(credentialsId: 'GNUPG_KEYRING', variable: 'GNUPG_KEYRING')]) {
