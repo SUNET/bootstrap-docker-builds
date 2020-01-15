@@ -362,12 +362,8 @@ node {
                 removedJobAction: 'DELETE',
                 removedViewAction: 'DELETE',
                 unstableOnDeprecation: true,
-                scriptText: """
-for (def extra_job in ${job_names.inspect()}) {
-  pipelineJob("\${extra_job}") {
-    using("${JOB_BASE_NAME}")
-  }
-}""")
+                scriptText: job_names.collect { job_name -> """pipelineJob("${job_name}") { using("${JOB_BASE_NAME}") }""" }.join("\n"),
+            )
         }
     }
     try {
