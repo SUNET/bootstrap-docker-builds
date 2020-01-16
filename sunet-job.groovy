@@ -64,8 +64,8 @@ def repo_must_be_signed(full_name) {
 }
 
 def load_env() {
-    stage("load_env") {
-        node {
+    node {
+        stage("load_env") {
             def args = [
                 $class: 'GitSCM',
                 userRemoteConfigs: [[url: "https://github.com/${FULL_NAME}.git"]],
@@ -200,6 +200,40 @@ def load_env() {
                 }
             }
 
+            // Run the extra-job bits if You're one of those
+            if (env.extra_jobs != null) {
+                for (def job in env.extra_jobs) {
+                    if (job.name == JOB_BASE_NAME) {
+                        echo "I'm a extra-job"
+                        // Merge everything in the extra job over the current job
+                        env << job
+                        // And remove the extra_jobs bit, becase we're the extra job here,
+                        // And we shouldn't generate ourselfs.
+                        env.remove("extra_jobs")
+                        break;
+                    }
+                }
+            }
+
+            // We need another if block, because env might have bin modified
+            if (env.extra_jobs != null) {
+                // Generate our extra_jobs by running some job-dsl
+                stage("extra_jobs") {
+                    jobDsl(
+                        failOnMissingPlugin: true,
+                        //failOnSeedCollision: true,
+                        // Why do job-dsl think we conflict with bootstrap? are template copying seed info?
+                        failOnSeedCollision: false,
+                        lookupStrategy: 'SEED_JOB',
+                        removedConfigFilesAction: 'DELETE',
+                        removedJobAction: 'DELETE',
+                        removedViewAction: 'DELETE',
+                        unstableOnDeprecation: true,
+                        scriptText: env.extra_jobs.collect { job -> """pipelineJob("${job.name}") { using("${JOB_BASE_NAME}") }""" }.join("\n"),
+                    )
+                }
+            }
+
             return env
         }
     }
@@ -222,42 +256,6 @@ if (!docker_cloud_name)
 
 // load and parse .jenkins.yaml
 def job_env = load_env()
-
-// Run the extra-job bits if You're one of those
-if (job_env.extra_jobs != null) {
-    for (def job in job_env.extra_jobs) {
-        if (job.name == JOB_BASE_NAME) {
-            echo "I'm a extra-job"
-            // Merge everything in the extra job over the current job
-            job_env << job
-            // And remove the extra_jobs bit, becase we're the extra job here,
-            // And we shouldn't generate ourselfs.
-            job_env.remove("extra_jobs")
-            break;
-        }
-    }
-}
-// We need another if block, because job_env might have bin modified
-if (job_env.extra_jobs != null) {
-    // Job-dsl needs a node, for some reason
-    node {
-        // Generate our extra_jobs by running some job-dsl
-        stage("extra_jobs") {
-            jobDsl(
-                failOnMissingPlugin: true,
-                //failOnSeedCollision: true,
-                // Why do job-dsl think we conflict with bootstrap? are template copying seed info?
-                failOnSeedCollision: false,
-                lookupStrategy: 'SEED_JOB',
-                removedConfigFilesAction: 'DELETE',
-                removedJobAction: 'DELETE',
-                removedViewAction: 'DELETE',
-                unstableOnDeprecation: true,
-                scriptText: job_env.extra_jobs.collect { job -> """pipelineJob("${job.name}") { using("${JOB_BASE_NAME}") }""" }.join("\n"),
-            )
-        }
-    }
-}
 
 if (job_env.builders.size() == 0 || _is_disabled(job_env)) {
     echo("No builder for ${job_env.full_name}...")
