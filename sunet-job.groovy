@@ -237,8 +237,29 @@ if (job_env.extra_jobs != null) {
         }
     }
 }
+// We need another if block, because job_env might have bin modified
+if (job_env.extra_jobs != null) {
+    // Job-dsl needs a node, for some reason
+    node {
+        // Generate our extra_jobs by running some job-dsl
+        stage("extra_jobs") {
+            jobDsl(
+                failOnMissingPlugin: true,
+                //failOnSeedCollision: true,
+                // Why do job-dsl think we conflict with bootstrap? are template copying seed info?
+                failOnSeedCollision: false,
+                lookupStrategy: 'SEED_JOB',
+                removedConfigFilesAction: 'DELETE',
+                removedJobAction: 'DELETE',
+                removedViewAction: 'DELETE',
+                unstableOnDeprecation: true,
+                scriptText: job_env.extra_jobs.collect { job -> """pipelineJob("${job.name}") { using("${JOB_BASE_NAME}") }""" }.join("\n"),
+            )
+        }
+    }
+}
 
-if ((job_env.builders.size() == 0 || _is_disabled(job_env)) && !job_env.extra_jobs) {
+if (job_env.builders.size() == 0 || _is_disabled(job_env)) {
     echo("No builder for ${job_env.full_name}...")
     currentBuild.result = "NOT_BUILT"
     return
@@ -355,27 +376,6 @@ properties([
 
 // This is broken out to a function, so it can be called either via a node() or a dockerNode()
 def runJob(job_env) {
-    // Generate our extra_jobs by running some job-dsl
-    if (job_env.extra_jobs != null) {
-        stage("extra_jobs") {
-            def job_names = []
-            for (job in job_env.extra_jobs) {
-                job_names += job.name
-            }
-            jobDsl(
-                failOnMissingPlugin: true,
-                //failOnSeedCollision: true,
-                // Why do job-dsl think we conflict with bootstrap? are template copying seed info?
-                failOnSeedCollision: false,
-                lookupStrategy: 'SEED_JOB',
-                removedConfigFilesAction: 'DELETE',
-                removedJobAction: 'DELETE',
-                removedViewAction: 'DELETE',
-                unstableOnDeprecation: true,
-                scriptText: job_names.collect { job_name -> """pipelineJob("${job_name}") { using("${JOB_BASE_NAME}") }""" }.join("\n"),
-            )
-        }
-    }
     def scmVars
     try {
         stage("checkout") {
