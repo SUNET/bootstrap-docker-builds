@@ -349,12 +349,6 @@ if (job_env.upstream != null && job_env.upstream.size() > 0) {
 if (trigger_list)
     property_list += [pipelineTriggers(trigger_list)]
 
-if (job_env.environment_variables != null) {
-    for (def item in job_env.environment_variables) {
-        // Set these variables in our current job_enviorment
-        env."${item.key}" = item.value
-    }
-}
 // We always need to keep FULL_NAME, and optionally DEV_MODE
 property_list += [
     $class: 'EnvInjectJobProperty',
@@ -376,6 +370,15 @@ properties([
 def runJob(job_env) {
     def scmVars
     try {
+        // Set the configured enviorment variables
+        if (job_env.environment_variables != null) {
+            // Set these variables in our current job_enviorment
+
+            // Use groovy magic here to be able to iterate without serialising iterator
+            // And use a shell to expand the string, so we don't have variables inside
+            // our env-vars because alot of things doen't really like that.
+            job_env.environment_variables.each { item -> env."${item.key}" = sh(returnStdout: true, script: """echo -n "${item.value}";""") }
+        }
         stage("checkout") {
             def args = [
                 $class: 'GitSCM',
