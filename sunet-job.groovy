@@ -159,8 +159,12 @@ def load_env() {
                 env.builders = []
 
                 if (fileExists("Dockerfile")) {
-                    echo("Found Dockerfile for ${env.full_name}. Adding \"docker\" to builders.")
-                    env.builders += "docker"
+                    if (readFile("Dockerfile").contains("FROM")) {
+                        echo("Found Dockerfile for ${env.full_name}. Adding \"docker\" to builders.")
+                        env.builders += "docker"
+                    } else {
+                        echo("FIXME: This repo contains a Dockerfile without a FROM!")
+                    }
                 }
 
                 if (fileExists("setup.py")) {
