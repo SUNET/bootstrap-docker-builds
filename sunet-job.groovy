@@ -238,7 +238,7 @@ if (job_env.extra_jobs != null) {
     }
 }
 
-if ((job_env.builders.size() == 0 && !job_env.extra_jobs) || _is_disabled(job_env)) {
+if ((job_env.builders.size() == 0 || _is_disabled(job_env)) && !job_env.extra_jobs) {
     echo("No builder for ${job_env.full_name}...")
     currentBuild.result = "NOT_BUILT"
     return
