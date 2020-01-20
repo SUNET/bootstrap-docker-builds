@@ -1,4 +1,3 @@
-
 Bootstrap job for automatically creating docker jobs from github for SUNET
 
 ### Available settings
@@ -193,8 +192,6 @@ extra_jobs:
 ```
 
 ### Tips
-#### Inconsistency detected by ld.so
-If the a new build fails with an error message saying something about "Inconsistency detected by ld.so" use `unset LD_LIBRARY_PATH` before script build command.
 
 #### String transformations
 https://wiki.jenkins.io/display/JENKINS/Token+Macro+Plugin
