@@ -195,3 +195,26 @@ extra_jobs:
 
 #### String transformations
 https://wiki.jenkins.io/display/JENKINS/Token+Macro+Plugin
+
+### And how do this thingie work?
+This is now a new generation of jenkins jobs for the sunet infrastructure.
+
+`github_docker_repos.groovy` is now a tiny peice of job-dsl-code which
+generates pipeline jobs for all the repos in the configured ORG's on github,
+but contrary to previous iterations it doesn't configure those jobs.
+In jenkins pipeline, the jobs decide themself what to do.
+The pipeline job used is the one in `sunet-job.groovy` and that checks out
+the master branch of the repo, reads `.jenkins.yml` and goes from there.
+
+Right now, due to that the logic is that .jenkins.yml is read from master,
+and might contain configuration to build another branch, there are two
+checkouts done. One for reading the configuration, and one for executing
+the build.
+
+Also, if configured to do so, currently by a opt-in-list, gpg signatures in
+git are verified before reading `.jenkins.yaml` and before building the repo.
+This is so we can ensure that we have a trust chain from developer to binaries.
+
+Future work is to have the option of having the repo provide its own
+standard `Jenkinsfile` and using that instead of the current
+`sunet-job.groovy`.
