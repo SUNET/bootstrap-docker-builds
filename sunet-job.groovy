@@ -84,7 +84,8 @@ def load_env() {
                             [path: 'Dockerfile'],
                             [path: 'setup.py'],
                             [path: 'CMakeLists.txt'],
-                            [path: 'Dockerfile.jenkins']
+                            [path: 'Dockerfile.jenkins'],
+                            [path: 'Jenkinsfile']
                         ]
                     ]
                 ],
@@ -123,14 +124,28 @@ def load_env() {
                 ]
             ]
 
+            def signature_verified = false
+
             // Check signature in git before reading from it.
             if (repo_must_be_signed(FULL_NAME)) {
                 echo "Verifying signature before reading anything from the repo"
                 configFileProvider([configFile(fileId: 'GPG_WRAPPER', variable: 'GPG_WRAPPER')]) {
                     withCredentials([file(credentialsId: 'GNUPG_KEYRING', variable: 'GNUPG_KEYRING')]) {
                         sh('chmod +x "$GPG_WRAPPER" && git -c "gpg.program=$GPG_WRAPPER" verify-commit HEAD')
+                        signature_verified = true
                     }
                 }
+            }
+
+            if (fileExists('Jenkinsfile')) {
+                if (signature_verified) {
+                    // Only load Jenkinsfile's from verified repos
+                    load 'Jenkinsfile'
+                } else {
+                    echo "Repo not verified. Add it to repo_must_be_signed"
+                    currentBuild.result = "ABORTED"
+                }
+                return 'Jenkinsfile'
             }
 
             // Load enviroment variables from repo yaml file
@@ -256,6 +271,12 @@ if (!docker_cloud_name)
 
 // load and parse .jenkins.yaml
 def job_env = load_env()
+
+if (job_env == 'Jenkinsfile') {
+    // load_env() detected and ran a Jenkinsfile
+    // end job here with whatever status that might have produced.
+    return
+}
 
 if (job_env.builders.size() == 0 || _is_disabled(job_env)) {
     echo("No builder for ${job_env.full_name}...")

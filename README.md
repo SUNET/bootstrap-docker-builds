@@ -215,6 +215,8 @@ Also, if configured to do so, currently by a opt-in-list, gpg signatures in
 git are verified before reading `.jenkins.yaml` and before building the repo.
 This is so we can ensure that we have a trust chain from developer to binaries.
 
-Future work is to have the option of having the repo provide its own
-standard `Jenkinsfile` and using that instead of the current
-`sunet-job.groovy`.
+For future migrations to a more standardized `Jenkinsfile` flow, one can
+add a `Jenkinsfile` to a repo, and turn on repo signature verification, and
+then use a standard flow like any other pipeline based jenkins machine.
+Just steal the relevant code for your project from `sunet-job.groovy` and
+customize your own `Jenkinsfile` to fit your project.
