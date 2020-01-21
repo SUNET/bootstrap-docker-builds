@@ -236,9 +236,7 @@ def load_env() {
                 stage("extra_jobs") {
                     jobDsl(
                         failOnMissingPlugin: true,
-                        //failOnSeedCollision: true,
-                        // Why do job-dsl think we conflict with bootstrap? are template copying seed info?
-                        failOnSeedCollision: false,
+                        failOnSeedCollision: true,
                         lookupStrategy: 'SEED_JOB',
                         removedConfigFilesAction: 'DELETE',
                         removedJobAction: 'DELETE',
