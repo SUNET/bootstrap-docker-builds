@@ -2,6 +2,8 @@
 import groovy.json.JsonSlurper
 import java.io.IOException
 
+import jenkins.model.Jenkins
+
 
 def orgs = ['SUNET','TheIdentitySelector']
 def api = "https://api.github.com"
@@ -74,7 +76,25 @@ for (org in orgs) {
                     continue
                 }
 
-                pipelineJob(repo.name) {
+                def existing_job = Jenkins.instance.getItem(repo.name)
+                def pipeline_job = pipelineJob(repo.name)
+
+                // Copy over anything we have generated
+                if (existing_job) {
+                    // Get the existing job xml
+                    def xml = existing_job.getConfigFile().asString()
+                    // Parse it in groovy
+                    def existing_job_conf = new XmlParser().parseText(xml)
+                    // And inject the existing properties into the new job
+                    pipeline_job.with {
+                        configure { project ->
+                            project.div(existing_job_conf.properties)
+                        }
+                    }
+                }
+
+                // But force these things to be as they should.
+                pipeline_job.with {
                     properties {
                         githubProjectUrl("https://github.com/${repo.full_name}")
                     }
