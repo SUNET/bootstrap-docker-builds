@@ -2,8 +2,6 @@
 import groovy.json.JsonSlurper
 import java.io.IOException
 
-// TODO: Remove this when migration to pipelineJob is done
-import jenkins.model.Jenkins
 
 def orgs = ['SUNET','TheIdentitySelector']
 def api = "https://api.github.com"
@@ -74,13 +72,6 @@ for (org in orgs) {
                 if (repo.archived) {
                     out.println("Skipping archived repo")
                     continue
-                }
-
-                // TODO: Remove this when migration to pipelineJob is done
-                def existing_job = Jenkins.instance.getItem(repo.name)
-                if (existing_job && existing_job instanceof hudson.model.FreeStyleProject) {
-                    println("Deleting existing freestyleJob ${repo.name} to make room for pipelineJob")
-                    existing_job.delete()
                 }
 
                 pipelineJob(repo.name) {
