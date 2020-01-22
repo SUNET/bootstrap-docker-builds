@@ -589,10 +589,6 @@ def runJob(job_env) {
             //slackSend "Build failed: - ${env.JOB_NAME} ${env.BUILD_NUMBER} (<${env.BUILD_URL}|Open>)"
             slackSend(channel: job_env.slack.room, message: job_env.slack.custom_message, tokenCredentialId: 'SLACK_TOKEN', username: job_env.slack.sendas)
         }
-        if (job_env.jabber != null) {
-            echo("${job_env.full_name} using Jabber notification to: ${job_env.jabber}")
-            echo "No jabber plugin loaded"
-        }
     }
 }
 
