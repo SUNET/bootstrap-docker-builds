@@ -583,11 +583,34 @@ def runJob(job_env) {
                 archiveArtifacts(args)
             }
         }
+    } catch (InterruptedException x) {
+        currentBuild.result = 'ABORTED'
+        throw x
+    } catch(x) {
+        currentBuild.result = 'FAILURE'
+        throw x
     } finally {
         if (_slack_enabled(job_env) && !env.DEV_MODE?.toBoolean()) {
-            echo("${job_env.full_name} using Slack notification to: ${job_env.slack.room}")
-            //slackSend "Build failed: - ${env.JOB_NAME} ${env.BUILD_NUMBER} (<${env.BUILD_URL}|Open>)"
-            slackSend(channel: job_env.slack.room, message: job_env.slack.custom_message, tokenCredentialId: 'SLACK_TOKEN', username: job_env.slack.sendas)
+            def current_result = currentBuild.result ? currentBuild.result : "SUCCESS"
+            def previous_result = currentBuild.getPreviousBuild()?.getResult()
+            if (previous_result != "SUCCESS" || current_result != "SUCCESS") {
+                def message_result
+                def color
+                if (previous_result != "SUCCESS" && current_result == "SUCCESS") {
+                    message_result = "Back to normal"
+                    color = 'good'
+                } else if (previous_result == current_result) {
+                    message_result = "Still ${current_result}"
+                    color = 'danger'
+                } else {
+                    message_result = current_result
+                    color = 'warning'
+                }
+                // TODO: Figure out how to sainly add custom parameters without having if en mass..
+                // TODO: right now message: job_env.slack.custom_message, username: job_env.slack.sendas are unsupported
+                // We're skipping after 2 min 33 sec, Back to normal after 22 min and so.
+                slackSend(color: color, channel: job_env.slack.room, message: "${env.JOB_NAME} - #${env.BUILD_NUMBER} ${message_result} (<${env.BUILD_URL}|Open>)")
+            }
         }
     }
 }
