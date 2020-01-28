@@ -76,6 +76,9 @@ for (org in orgs) {
                     continue
                 }
 
+                // Keep this in sync between github_docker_repos.groovy and sunet-job.groovy
+                // We need this magic dance so job-dsl doesn't overwrite
+                // any triggers or other properties created in pipeline
                 def existing_job = Jenkins.instance.getItem(repo.name)
                 def pipeline_job = pipelineJob(repo.name)
 

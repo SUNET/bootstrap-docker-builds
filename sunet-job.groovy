@@ -234,6 +234,9 @@ def load_env() {
             if (env.extra_jobs != null) {
                 // Generate our extra_jobs by running some job-dsl
                 stage("extra_jobs") {
+                    // Write extra_jobs structure as json, so we can read it in job-dsl
+                    // This way we don't need to pass variables as strings and so on.
+                    writeJSON(file: "extra_jobs.json", json: env.extra_jobs)
                     jobDsl(
                         failOnMissingPlugin: true,
                         failOnSeedCollision: true,
@@ -242,7 +245,37 @@ def load_env() {
                         removedJobAction: 'DELETE',
                         removedViewAction: 'DELETE',
                         unstableOnDeprecation: true,
-                        scriptText: env.extra_jobs.collect { job -> """pipelineJob("${job.name}") { using("${JOB_BASE_NAME}") }""" }.join("\n"),
+                        scriptText: """
+import groovy.json.JsonSlurper
+import jenkins.model.Jenkins
+def extra_jobs = new JsonSlurper().parseText(readFileFromWorkspace("extra_jobs.json"))
+
+for (job in extra_jobs) {
+    // Keep this in sync between github_docker_repos.groovy and sunet-job.groovy
+    // We need this magic dance so job-dsl doesn't overwrite
+    // any triggers or other properties created in pipeline
+    def existing_job = Jenkins.instance.getItem(job.name)
+    def pipeline_job = pipelineJob(job.name)
+
+    // Copy over anything we have generated
+    if (existing_job) {
+        // Get the existing job xml
+        def xml = existing_job.getConfigFile().asString()
+        // Parse it in groovy
+        def existing_job_conf = new XmlParser().parseText(xml)
+        // And inject the existing properties into the new job
+        pipeline_job.with {
+            configure { project ->
+                project.div(existing_job_conf.properties)
+            }
+        }
+    }
+
+    pipeline_job.with {
+        using("${JOB_BASE_NAME}")
+    }
+}
+""",
                     )
                 }
             }
