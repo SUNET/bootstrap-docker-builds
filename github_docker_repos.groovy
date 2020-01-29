@@ -128,6 +128,13 @@ configFiles {
         comment("Script managed from job-dsl, don't edit in jenkins.")
         content(readFileFromWorkspace("managed_scripts/docker_build_prep.sh"))
     }
+    // Used to build extra-jobs
+    customConfig {
+        id("sunet-job.groovy")
+        name("sunet-job.groovy")
+        comment("Script managed from job-dsl, don't edit in jenkins.")
+        content(readFileFromWorkspace("sunet-job.groovy"))
+    }
 }
 
 listView("cnaas") {

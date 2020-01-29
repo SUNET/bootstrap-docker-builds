@@ -237,15 +237,17 @@ def load_env() {
                     // Write extra_jobs structure as json, so we can read it in job-dsl
                     // This way we don't need to pass variables as strings and so on.
                     writeJSON(file: "extra_jobs.json", json: env.extra_jobs)
-                    jobDsl(
-                        failOnMissingPlugin: true,
-                        failOnSeedCollision: true,
-                        lookupStrategy: 'SEED_JOB',
-                        removedConfigFilesAction: 'DELETE',
-                        removedJobAction: 'DELETE',
-                        removedViewAction: 'DELETE',
-                        unstableOnDeprecation: true,
-                        scriptText: """
+                    // Provision the pipeline groovy
+                    configFileProvider([configFile(fileId: 'sunet-job.groovy', targetLocation: 'sunet-job.groovy')]) {
+                        jobDsl(
+                            failOnMissingPlugin: true,
+                            failOnSeedCollision: true,
+                            lookupStrategy: 'SEED_JOB',
+                            removedConfigFilesAction: 'DELETE',
+                            removedJobAction: 'DELETE',
+                            removedViewAction: 'DELETE',
+                            unstableOnDeprecation: true,
+                            scriptText: """
 import groovy.json.JsonSlurper
 import jenkins.model.Jenkins
 def extra_jobs = new JsonSlurper().parseText(readFileFromWorkspace("extra_jobs.json"))
@@ -272,11 +274,21 @@ for (job in extra_jobs) {
     }
 
     pipeline_job.with {
-        using("${JOB_BASE_NAME}")
+        environmentVariables {
+            env("FULL_NAME", "${FULL_NAME}")
+            env("DEV_MODE", "${DEV_MODE}")
+        }
+        definition {
+            cps {
+                script(readFileFromWorkspace('sunet-job.groovy'))
+                sandbox()
+            }
+        }
     }
 }
 """,
-                    )
+                        )
+                    }
                 }
             }
 
