@@ -98,9 +98,6 @@ for (org in orgs) {
 
                 // But force these things to be as they should.
                 pipeline_job.with {
-                    properties {
-                        githubProjectUrl("https://github.com/${repo.full_name}")
-                    }
                     environmentVariables {
                         env("FULL_NAME", repo.full_name)
                         env("DEV_MODE", is_dev_mode.toString())
