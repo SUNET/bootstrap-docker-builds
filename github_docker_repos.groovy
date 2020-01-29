@@ -120,14 +120,13 @@ for (org in orgs) {
     }
 }
 
-for (managed_script in ["docker_build_prep.sh"]) {
-    configFiles {
-        scriptConfig {
-            id(managed_script)
-            name(managed_script)
-            comment("Script managed from job-dsl, don't edit in jenkins.")
-            content(readFileFromWorkspace("managed_scripts/" + managed_script))
-        }
+configFiles {
+    // Used in some jobs as a prepp step
+    scriptConfig {
+        id("docker_build_prep.sh")
+        name("docker_build_prep.sh")
+        comment("Script managed from job-dsl, don't edit in jenkins.")
+        content(readFileFromWorkspace("managed_scripts/docker_build_prep.sh"))
     }
 }
 
