@@ -56,7 +56,7 @@ def _get_int(value, default_value) {
 // groovy.lang.MapWithDefault NotSerializable , so use it only in a helper function
 @NonCPS
 def repo_must_be_signed(full_name) {
-    def repo_must_be_signed = [:].withDefault{ false }
+    def repo_must_be_signed = [:].withDefault { false }
     repo_must_be_signed["SUNET/docker-jenkins"] = true
     repo_must_be_signed["SUNET/docker-jenkins-job"] = true
 
@@ -67,30 +67,30 @@ def load_env() {
     node {
         stage("load_env") {
             def args = [
-                $class: 'GitSCM',
-                userRemoteConfigs: [[url: "https://github.com/${FULL_NAME}.git"]],
-                branches: [[name: '*/master']],
-                extensions: [
-                    [$class: 'CheckoutOption'],
-                    [$class: 'CloneOption',
-                        depth: 1,
-                        noTags: true,
-                        reference: '',
-                        shallow: true
+                    $class                           : 'GitSCM',
+                    userRemoteConfigs                : [[url: "https://github.com/${FULL_NAME}.git"]],
+                    branches                         : [[name: '*/master']],
+                    extensions                       : [
+                            [$class: 'CheckoutOption'],
+                            [$class   : 'CloneOption',
+                             depth    : 1,
+                             noTags   : true,
+                             reference: '',
+                             shallow  : true
+                            ],
+                            // FIXME: Is this worth it? to keep these in sync?
+                            [$class: 'SparseCheckoutPaths', sparseCheckoutPaths: [
+                                    [path: '.jenkins.yaml'],
+                                    [path: 'Dockerfile'],
+                                    [path: 'setup.py'],
+                                    [path: 'CMakeLists.txt'],
+                                    [path: 'Dockerfile.jenkins'],
+                                    [path: 'Jenkinsfile']
+                            ]
+                            ]
                     ],
-                    // FIXME: Is this worth it? to keep these in sync?
-                    [$class: 'SparseCheckoutPaths', sparseCheckoutPaths: [
-                            [path: '.jenkins.yaml'],
-                            [path: 'Dockerfile'],
-                            [path: 'setup.py'],
-                            [path: 'CMakeLists.txt'],
-                            [path: 'Dockerfile.jenkins'],
-                            [path: 'Jenkinsfile']
-                        ]
-                    ]
-                ],
-                doGenerateSubmoduleConfigurations: false,
-                submoduleCfg: [],
+                    doGenerateSubmoduleConfigurations: false,
+                    submoduleCfg                     : [],
             ]
             try {
                 checkout(changelog: false, poll: false, scm: args)
@@ -104,24 +104,24 @@ def load_env() {
 
             // Default environment
             def env = [
-                'name'                   : JOB_BASE_NAME,
-                'full_name'              : FULL_NAME.toLowerCase(),
-                'repo_full_name'         : FULL_NAME, // Jenkins is not case insensitive with push notifications
-                'repo_must_be_signed'    : repo_must_be_signed(FULL_NAME),
-                'disabled'               : false,
-                'git'                    : [:],
-                'environment_variables'  : [:],
-                'python_source_directory': 'src',
-                'slack'                  : ['room': 'devops-builds', 'disabled': false],
-                'triggers'               : [:],
-                'builders'               : [],
-                'docker_name'            : FULL_NAME.toLowerCase(),
-                'build_in_docker'        : [
-                    'disabled': false,
-                    'dockerfile': null,
-                    'image': null,
-                    'start_command': "/run.sh"
-                ]
+                    'name'                   : JOB_BASE_NAME,
+                    'full_name'              : FULL_NAME.toLowerCase(),
+                    'repo_full_name'         : FULL_NAME, // Jenkins is not case insensitive with push notifications
+                    'repo_must_be_signed'    : repo_must_be_signed(FULL_NAME),
+                    'disabled'               : false,
+                    'git'                    : [:],
+                    'environment_variables'  : [:],
+                    'python_source_directory': 'src',
+                    'slack'                  : ['room': 'devops-builds', 'disabled': false],
+                    'triggers'               : [:],
+                    'builders'               : [],
+                    'docker_name'            : FULL_NAME.toLowerCase(),
+                    'build_in_docker'        : [
+                            'disabled'     : false,
+                            'dockerfile'   : null,
+                            'image'        : null,
+                            'start_command': "/run.sh"
+                    ]
             ]
 
             def signature_verified = false
@@ -240,14 +240,14 @@ def load_env() {
                     // Provision the pipeline groovy
                     configFileProvider([configFile(fileId: 'sunet-job.groovy', targetLocation: 'sunet-job.groovy')]) {
                         jobDsl(
-                            failOnMissingPlugin: true,
-                            failOnSeedCollision: true,
-                            lookupStrategy: 'SEED_JOB',
-                            removedConfigFilesAction: 'DELETE',
-                            removedJobAction: 'DELETE',
-                            removedViewAction: 'DELETE',
-                            unstableOnDeprecation: true,
-                            scriptText: """
+                                failOnMissingPlugin: true,
+                                failOnSeedCollision: true,
+                                lookupStrategy: 'SEED_JOB',
+                                removedConfigFilesAction: 'DELETE',
+                                removedJobAction: 'DELETE',
+                                removedViewAction: 'DELETE',
+                                unstableOnDeprecation: true,
+                                scriptText: """
 import groovy.json.JsonSlurper
 import jenkins.model.Jenkins
 def extra_jobs = new JsonSlurper().parseText(readFileFromWorkspace("extra_jobs.json"))
@@ -331,8 +331,8 @@ echo("running job for ${job_env.full_name} using builders: ${job_env.builders}")
 
 // Rotate builds
 def log_rotator = [
-    $class: "LogRotator",
-    "numToKeepStr": '10',
+        $class        : "LogRotator",
+        "numToKeepStr": '10',
 ]
 // Rotate archived artifacts
 if (job_env.archive_artifacts != null) {
@@ -415,18 +415,18 @@ if (trigger_list)
 
 // We always need to keep FULL_NAME, and optionally DEV_MODE
 property_list += [
-    $class: 'EnvInjectJobProperty',
-    info: [
-        propertiesContent: "FULL_NAME=${FULL_NAME}\n" + (env.DEV_MODE != null ? "DEV_MODE=${DEV_MODE}\n" : "")
-    ],
-    keepBuildVariables: true,
-    keepJenkinsSystemVariables: true,
-    on: true
+        $class                    : 'EnvInjectJobProperty',
+        info                      : [
+                propertiesContent: "FULL_NAME=${FULL_NAME}\n" + (env.DEV_MODE != null ? "DEV_MODE=${DEV_MODE}\n" : "")
+        ],
+        keepBuildVariables        : true,
+        keepJenkinsSystemVariables: true,
+        on                        : true
 ]
 
 properties([
-    buildDiscarder(log_rotator),
-    [$class: 'GithubProjectProperty', projectUrlStr: "${job_env.full_name}"],
+        buildDiscarder(log_rotator),
+        [$class: 'GithubProjectProperty', projectUrlStr: "${job_env.full_name}"],
 ] + property_list)
 
 
@@ -436,19 +436,20 @@ def runJob(job_env) {
     try {
         // Set the configured enviorment variables
         if (job_env.environment_variables != null) {
-            // Set these variables in our current job_enviorment
-
+            // Set these variables in our current job environment
+            echo("Configured environment variables:")
+            job_env.environment_variables.each { item -> echo("${item}") }
             // Use groovy magic here to be able to iterate without serialising iterator
             // And use a shell to expand the string, so we don't have variables inside
-            // our env-vars because alot of things doen't really like that.
+            // our env-vars because a lot of things doesn't really like that.
             job_env.environment_variables.each { item -> env."${item.key}" = sh(returnStdout: true, script: """echo -n "${item.value}";""") }
         }
         stage("checkout") {
             def args = [
-                $class: 'GitSCM',
-                userRemoteConfigs: [[url: "https://github.com/${job_env.repo_full_name}.git"]],
-                branches: [],
-                extensions: [],
+                    $class           : 'GitSCM',
+                    userRemoteConfigs: [[url: "https://github.com/${job_env.repo_full_name}.git"]],
+                    branches         : [],
+                    extensions       : [],
             ]
             // Branch
             if (job_env.git.branch != null) {
@@ -474,6 +475,8 @@ def runJob(job_env) {
                 }
             }
             scmVars = checkout(args)
+            echo('Making scmVars available')
+            scmVars.each { item -> env."${item.key}" = item.value }
             // ['GIT_BRANCH':'origin/master', 'GIT_COMMIT':'8408762af61447e38a832513e595a518d81bf9af', 'GIT_PREVIOUS_COMMIT':'8408762af61447e38a832513e595a518d81bf9af', 'GIT_PREVIOUS_SUCCESSFUL_COMMIT':'dcea3f3567b7f55bc7a1a2f3d6752c084cc9b694', 'GIT_URL':'https://github.com/glance-/docker-goofys.git']
         }
         if (repo_must_be_signed(FULL_NAME)) {
@@ -489,9 +492,9 @@ def runJob(job_env) {
         if (job_env.copy_artifacts != null) {
             stage("Copy artifacts") {
                 def args = [
-                    projectName: job_env.copy_artifacts.project_name,
-                    selector: lastSuccessful(),
-                    fingerprintArtifacts: true,
+                        projectName         : job_env.copy_artifacts.project_name,
+                        selector            : lastSuccessful(),
+                        fingerprintArtifacts: true,
                 ]
                 if (job_env.copy_artifacts.target_dir != null)
                     args["target"] = job_env.copy_artifacts.target_dir
@@ -499,7 +502,7 @@ def runJob(job_env) {
                     args["filter"] = job_env.copy_artifacts.include
                 if (job_env.copy_artifacts.exclude != null)
                     excludePatterns(job_env.copy_artifacts.exclude.join(', '))
-                    args["excludes"] = job_env.copy_artifacts.exclude
+                args["excludes"] = job_env.copy_artifacts.exclude
                 if (job_env.copy_artifacts.flatten != null)
                     args["flatten"] = job_env.copy_artifacts.flatten
                 if (job_env.copy_artifacts.optional != null)
@@ -546,7 +549,11 @@ def runJob(job_env) {
                 }
                 tags = ["git-${scmVars.GIT_COMMIT[0..8]}", "ci-${job_env.name}-${BUILD_NUMBER}"]
                 if (job_env.docker_tags != null)
-                    tags.addAll(job_env.docker_tags)
+                    // Expand docker_tags
+                    job_env.docker_tags.each { item ->
+                        tag = env.getEnvironment().expand(item)
+                        tags.add(tag)
+                    }
 
                 if (_managed_script_enabled(job_env, 'docker_tag.sh')) {
                     echo("Managed script docker_tag.sh enabled.")
@@ -559,17 +566,23 @@ def runJob(job_env) {
                 if (!_get_bool(job_env.docker_skip_tag_as_latest, false))
                     tags.add("latest")
 
+                // Expand docker_name
+                def docker_name = env.getEnvironment().expand(job_env.docker_name)
                 def full_names = []
                 for (def tag in tags)
-                    full_names.add("docker.sunet.se/${job_env.docker_name.replace("-/", "/")}:${tag}") // docker doesn't like glance-/repo, so mangle it to glance/repo
+                    full_names.add("docker.sunet.se/${docker_name.replace("-/", "/")}:${tag}")
+                // docker doesn't like glance-/repo, so mangle it to glance/repo
+
+                echo("Docker image will be pushed as:")
+                echo(full_names.toString())
 
                 def docker_build_and_publish = [
-                    $class: 'DockerBuilderPublisher',
-                    dockerFileDirectory: "",
-                    tagsString: full_names.join("\n"),
-                    pushOnSuccess: !env.DEV_MODE?.toBoolean(), // Don't push in dev mode
-                    pull: (env.DEV_MODE?.toBoolean() ? false : _get_bool(job_env.docker_force_pull, true)),
-                    noCache: (_get_bool(job_env.docker_no_cache, true)),
+                        $class             : 'DockerBuilderPublisher',
+                        dockerFileDirectory: "",
+                        tagsString         : full_names.join("\n"),
+                        pushOnSuccess      : !env.DEV_MODE?.toBoolean(), // Don't push in dev mode
+                        pull               : (env.DEV_MODE?.toBoolean() ? false : _get_bool(job_env.docker_force_pull, true)),
+                        noCache            : (_get_bool(job_env.docker_no_cache, true)),
                 ]
                 if (job_env.docker_context_dir != null)
                     docker_build_and_publish["dockerFileDirectory"] = job_env.docker_context_dir
@@ -602,11 +615,11 @@ def runJob(job_env) {
                         if (job_env.builders.contains("python") || job_env.builders.contains("script")) {
                             echo("Publishing over ssh to ${target} enabled.")
                             sshPublisher(publishers: [sshPublisherDesc(
-                                configName: 'pypi.sunet.se',
-                                transfers: [sshTransfer(
-                                    removePrefix: 'dist',
-                                    sourceFiles: 'dist/*.egg,dist/*.tar.gz,dist/*.whl'
-                                )]
+                                    configName: 'pypi.sunet.se',
+                                    transfers: [sshTransfer(
+                                            removePrefix: 'dist',
+                                            sourceFiles: 'dist/*.egg,dist/*.tar.gz,dist/*.whl'
+                                    )]
                             )])
                         }
                     } else {
@@ -620,7 +633,7 @@ def runJob(job_env) {
             stage("Archiving artifacts") {
                 echo("${job_env.full_name} using artifact archiver for ${job_env.archive_artifacts.include}")
                 def args = [
-                    "artifacts": job_env.archive_artifacts.include
+                        "artifacts": job_env.archive_artifacts.include
                 ]
                 if (job_env.archive_artifacts.exclude != null) {
                     args["excludes"] = job_env.archive_artifacts.exclude
@@ -631,7 +644,7 @@ def runJob(job_env) {
     } catch (InterruptedException x) {
         currentBuild.result = 'ABORTED'
         throw x
-    } catch(x) {
+    } catch (x) {
         currentBuild.result = 'FAILURE'
         throw x
     } finally {
