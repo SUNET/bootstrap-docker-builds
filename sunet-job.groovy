@@ -468,7 +468,7 @@ def runJob(job_env) {
                 if (job_env.git.extensions.checkout_local_branch != null) {
                     echo("${job_env.full_name} checking out local branch")
                     args["extensions"].add([$class: 'PruneStaleBranch'])
-                    args["extensions"].add([$class: 'LocalBranch'])
+                    args["extensions"].add([$class: 'LocalBranch', localBranch: '**'])
                 }
                 if (job_env.git.extensions.shallow_clone != null) {
                     args["extensions"].add([$class: 'CloneOption', shallow: true])
@@ -476,7 +476,21 @@ def runJob(job_env) {
             }
             scmVars = checkout(args)
             echo('Making scmVars available')
+            // The pluging seems borked, set what we need manually
+            // https://issues.jenkins-ci.org/browse/JENKINS-45489
+            FULL_PATH_BRANCH = "${sh(script:'git name-rev --name-only HEAD', returnStdout: true)}".replace("\n", "")
+            COMMIT_SHA1 = "${sh(script: 'git rev-parse HEAD', returnStdout: true)}".replace("\n", "")
+            PREVIOUS_COMMIT = "${sh(script: 'git rev-parse HEAD^1', returnStdout: true)}".replace("\n", "")
+            scmVars.GIT_BRANCH = FULL_PATH_BRANCH
+            scmVars.GIT_COMMIT = COMMIT_SHA1
+            scmVars.GIT_PREVIOUS_COMMIT = PREVIOUS_COMMIT
+            scmVars.GIT_LOCAL_BRANCH = FULL_PATH_BRANCH.substring(FULL_PATH_BRANCH.lastIndexOf('/') + 1, FULL_PATH_BRANCH.length())
             scmVars.each { item -> env."${item.key}" = item.value }
+            echo("GIT_BRANCH: ${GIT_BRANCH}")
+            echo("GIT_COMMIT: ${GIT_COMMIT}")
+            echo("GIT_PREVIOUS_COMMIT: ${GIT_PREVIOUS_COMMIT}")
+            echo("GIT_LOCAL_BRANCH: ${GIT_LOCAL_BRANCH}")
+
             // ['GIT_BRANCH':'origin/master', 'GIT_COMMIT':'8408762af61447e38a832513e595a518d81bf9af', 'GIT_PREVIOUS_COMMIT':'8408762af61447e38a832513e595a518d81bf9af', 'GIT_PREVIOUS_SUCCESSFUL_COMMIT':'dcea3f3567b7f55bc7a1a2f3d6752c084cc9b694', 'GIT_URL':'https://github.com/glance-/docker-goofys.git']
         }
         if (repo_must_be_signed(FULL_NAME)) {
@@ -554,6 +568,10 @@ def runJob(job_env) {
                         tag = env.getEnvironment().expand(item)
                         tags.add(tag)
                     }
+                echo("Docker tags:")
+                tags.each { tag ->
+                    echo(tag)
+                }
 
                 if (_managed_script_enabled(job_env, 'docker_tag.sh')) {
                     echo("Managed script docker_tag.sh enabled.")
@@ -574,7 +592,9 @@ def runJob(job_env) {
                 // docker doesn't like glance-/repo, so mangle it to glance/repo
 
                 echo("Docker image will be pushed as:")
-                echo(full_names.toString())
+                full_names.each { name ->
+                    echo(name)
+                }
 
                 def docker_build_and_publish = [
                         $class             : 'DockerBuilderPublisher',
