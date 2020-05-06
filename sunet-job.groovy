@@ -476,14 +476,17 @@ def runJob(job_env) {
             }
             scmVars = checkout(args)
             echo('Making scmVars available')
-            // The pluging seems borked, set what we need manually
+            // The plugin seems borked, set what we need manually
             // https://issues.jenkins-ci.org/browse/JENKINS-45489
             FULL_PATH_BRANCH = "${sh(script:'git name-rev --name-only HEAD', returnStdout: true)}".replace("\n", "")
             COMMIT_SHA1 = "${sh(script: 'git rev-parse HEAD', returnStdout: true)}".replace("\n", "")
-            PREVIOUS_COMMIT = "${sh(script: 'git rev-parse HEAD^1', returnStdout: true)}".replace("\n", "")
+            // There is no previout commit to find if a shallow clone is checked out
+            if (job_env.git.extensions.shallow_clone == null) {
+                PREVIOUS_COMMIT = "${sh(script: 'git rev-parse HEAD^1', returnStdout: true)}".replace("\n", "")
+                scmVars.GIT_PREVIOUS_COMMIT = PREVIOUS_COMMIT
+            }
             scmVars.GIT_BRANCH = FULL_PATH_BRANCH
             scmVars.GIT_COMMIT = COMMIT_SHA1
-            scmVars.GIT_PREVIOUS_COMMIT = PREVIOUS_COMMIT
             scmVars.GIT_LOCAL_BRANCH = FULL_PATH_BRANCH.substring(FULL_PATH_BRANCH.lastIndexOf('/') + 1, FULL_PATH_BRANCH.length())
             scmVars.each { item -> env."${item.key}" = item.value }
             echo("GIT_BRANCH: ${GIT_BRANCH}")
