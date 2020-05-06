@@ -582,7 +582,8 @@ def runJob(job_env) {
                     // docker_tag is buggy and trying to deterministically find a docker image
                     // based on a git sha. This detonates if it sees other images built on the same sha,
                     // so implement the same functionallity here.
-                    tags.add("branch-${scmVars.GIT_BRANCH.replace('origin/', '')}")
+                    // Due to git plugin having some issues we now always have a GIT_LOCAL_BRANCH.
+                    tags.add("branch-${scmVars.GIT_LOCAL_BRANCH}")
                 }
                 if (!_get_bool(job_env.docker_skip_tag_as_latest, false))
                     tags.add("latest")
