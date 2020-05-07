@@ -136,6 +136,7 @@ configFiles {
         content(readFileFromWorkspace("sunet-job.groovy"))
     }
 }
+removedConfigFilesAction('DELETE')
 
 listView("cnaas") {
     jobs {
