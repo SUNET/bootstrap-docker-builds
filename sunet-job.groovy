@@ -464,6 +464,7 @@ def runJob(job_env) {
                 echo("${job_env.full_name} building branch master")
                 args["branches"].add(["name": "*/master"])
             }
+            shallow_clone = false
             if (job_env.git.extensions != null) {
                 if (job_env.git.extensions.checkout_local_branch != null) {
                     echo("${job_env.full_name} checking out local branch")
@@ -471,6 +472,7 @@ def runJob(job_env) {
                     args["extensions"].add([$class: 'LocalBranch', localBranch: '**'])
                 }
                 if (job_env.git.extensions.shallow_clone != null) {
+                    shallow_clone = true
                     args["extensions"].add([$class: 'CloneOption', shallow: true])
                 }
             }
@@ -481,7 +483,7 @@ def runJob(job_env) {
             FULL_PATH_BRANCH = "${sh(script:'git name-rev --name-only HEAD', returnStdout: true)}".replace("\n", "")
             COMMIT_SHA1 = "${sh(script: 'git rev-parse HEAD', returnStdout: true)}".replace("\n", "")
             // There is no previout commit to find if a shallow clone is checked out
-            if (job_env.git.extensions.shallow_clone == null) {
+            if (!shallow_clone) {
                 PREVIOUS_COMMIT = "${sh(script: 'git rev-parse HEAD^1', returnStdout: true)}".replace("\n", "")
                 scmVars.GIT_PREVIOUS_COMMIT = PREVIOUS_COMMIT
             }
