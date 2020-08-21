@@ -427,7 +427,7 @@ property_list += [
 properties([
         buildDiscarder(log_rotator),
         [$class: 'GithubProjectProperty', projectUrlStr: "${job_env.full_name}"],
-        [$class: 'copyArtifactPermission', projectNames: "*"],
+        [$class: 'CopyArtifactPermission', projectNames: "*"],
 ] + property_list)
 
 
