@@ -421,13 +421,14 @@ property_list += [
         ],
         keepBuildVariables        : true,
         keepJenkinsSystemVariables: true,
-        on                        : true
+        on                        : true,
+        copyArtifactPermission    : ["*"],
 ]
 
 properties([
         buildDiscarder(log_rotator),
         [$class: 'GithubProjectProperty', projectUrlStr: "${job_env.full_name}"],
-        [$class: 'CopyArtifactPermission', projectNames: "*"],
+        //[$class: 'CopyArtifactPermission', projectNames: ["*"]],
 ] + property_list)
 
 
