@@ -421,8 +421,19 @@ property_list += [
         ],
         keepBuildVariables        : true,
         keepJenkinsSystemVariables: true,
-        on                        : true
+        on                        : true,
 ]
+
+if (job_env.archive_artifacts != null) {
+    if (job_env.archive_artifacts.allowed_projects != null) {
+        String allowed_projects = job_env.archive_artifacts.allowed_projects.join(",")
+        property_list += [copyArtifactPermission(allowed_projects)]
+    } else {
+        // Allow all projects to copy artifacts as a compatibility measure if archive_artifacts is set but
+        // allowed_projects is missing
+        property_list += [copyArtifactPermission('*')]
+    }
+}
 
 properties([
         buildDiscarder(log_rotator),

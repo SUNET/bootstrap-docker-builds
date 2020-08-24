@@ -92,6 +92,11 @@ archive_artifacts:
   exclude: "foo/bar/**/*"
   # Number of archives to keep
   num_to_keep: 1
+  # Projects allowed to use saved artifacts
+  # (as a compatibility measure all projects are allowed to copy artifacts if this setting is omitted)
+  allowed_projects:
+    - project1
+    - another project
 # Use artifacts from another projects last successful build
 copy_artifacts:
   # Name of project to copy artifacts from
