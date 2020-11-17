@@ -277,7 +277,7 @@ for (job in extra_jobs) {
     pipeline_job.with {
         environmentVariables {
             env("FULL_NAME", "${FULL_NAME}")
-            env("DEFAULT_BRANCH", "${DEFAULT_BRANCH}"
+            env("DEFAULT_BRANCH", "${DEFAULT_BRANCH}")
             env("DEV_MODE", "${DEV_MODE}")
         }
         definition {
