@@ -474,8 +474,8 @@ def runJob(job_env) {
                     args["branches"].add(["name": "*/${branch}"])
                 }
             } else {
-                echo("${job_env.full_name} building branch master")
-                args["branches"].add(["name": "*/master"])
+                echo("${job_env.full_name} building branch ${job_env.default_branch}")
+                args["branches"].add(["name": "*/${job_env.default_branch}"])
             }
             shallow_clone = false
             if (job_env.git.extensions != null) {
