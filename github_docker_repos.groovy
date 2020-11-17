@@ -100,6 +100,7 @@ for (org in orgs) {
                 pipeline_job.with {
                     environmentVariables {
                         env("FULL_NAME", repo.full_name)
+                        env("DEFAULT_BRANCH", repo.default_branch)
                         env("DEV_MODE", is_dev_mode.toString())
                     }
                     definition {

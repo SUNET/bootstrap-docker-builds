@@ -69,7 +69,7 @@ def load_env() {
             def args = [
                     $class                           : 'GitSCM',
                     userRemoteConfigs                : [[url: "https://github.com/${FULL_NAME}.git"]],
-                    branches                         : [[name: '*/master']],
+                    branches                         : [[name: "*/${DEFAULT_BRANCH}"]],
                     extensions                       : [
                             [$class: 'CheckoutOption'],
                             [$class   : 'CloneOption',
@@ -110,6 +110,7 @@ def load_env() {
                     'repo_must_be_signed'    : repo_must_be_signed(FULL_NAME),
                     'disabled'               : false,
                     'git'                    : [:],
+                    'default_branch'         : DEFAULT_BRANCH,
                     'environment_variables'  : [:],
                     'python_source_directory': 'src',
                     'slack'                  : ['room': 'devops-builds', 'disabled': false],
@@ -276,6 +277,7 @@ for (job in extra_jobs) {
     pipeline_job.with {
         environmentVariables {
             env("FULL_NAME", "${FULL_NAME}")
+            env("DEFAULT_BRANCH", "${DEFAULT_BRANCH}"
             env("DEV_MODE", "${DEV_MODE}")
         }
         definition {
@@ -413,11 +415,11 @@ if (job_env.upstream != null && job_env.upstream.size() > 0) {
 if (trigger_list)
     property_list += [pipelineTriggers(trigger_list)]
 
-// We always need to keep FULL_NAME, and optionally DEV_MODE
+// We always need to keep FULL_NAME, DEFAULT_BRANCH, and optionally DEV_MODE
 property_list += [
         $class                    : 'EnvInjectJobProperty',
         info                      : [
-                propertiesContent: "FULL_NAME=${FULL_NAME}\n" + (env.DEV_MODE != null ? "DEV_MODE=${DEV_MODE}\n" : "")
+                propertiesContent: "FULL_NAME=${FULL_NAME}\n" + "DEFAULT_BRANCH=${DEFAULT_BRANCH}\n" + (env.DEV_MODE != null ? "DEV_MODE=${DEV_MODE}\n" : "")
         ],
         keepBuildVariables        : true,
         keepJenkinsSystemVariables: true,
@@ -507,7 +509,7 @@ def runJob(job_env) {
             echo("GIT_PREVIOUS_COMMIT: ${GIT_PREVIOUS_COMMIT}")
             echo("GIT_LOCAL_BRANCH: ${GIT_LOCAL_BRANCH}")
 
-            // ['GIT_BRANCH':'origin/master', 'GIT_COMMIT':'8408762af61447e38a832513e595a518d81bf9af', 'GIT_PREVIOUS_COMMIT':'8408762af61447e38a832513e595a518d81bf9af', 'GIT_PREVIOUS_SUCCESSFUL_COMMIT':'dcea3f3567b7f55bc7a1a2f3d6752c084cc9b694', 'GIT_URL':'https://github.com/glance-/docker-goofys.git']
+            // ['GIT_BRANCH':'origin/main', 'GIT_COMMIT':'8408762af61447e38a832513e595a518d81bf9af', 'GIT_PREVIOUS_COMMIT':'8408762af61447e38a832513e595a518d81bf9af', 'GIT_PREVIOUS_SUCCESSFUL_COMMIT':'dcea3f3567b7f55bc7a1a2f3d6752c084cc9b694', 'GIT_URL':'https://github.com/glance-/docker-goofys.git']
         }
         if (repo_must_be_signed(FULL_NAME)) {
             // Only build code which we can validate
