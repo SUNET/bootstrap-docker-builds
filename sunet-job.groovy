@@ -497,7 +497,8 @@ def runJob(job_env) {
             COMMIT_SHA1 = "${sh(script: 'git rev-parse HEAD', returnStdout: true)}".replace("\n", "")
             // There is no previout commit to find if a shallow clone is checked out
             if (!shallow_clone) {
-                PREVIOUS_COMMIT = "${sh(script: 'git rev-parse HEAD^1', returnStdout: true)}".replace("\n", "")
+                // git rev-parse HEAD^1 fails sometimes even when repos has previous commits, no clue why
+                PREVIOUS_COMMIT = "${sh(script: 'git rev-parse HEAD^1 || true', returnStdout: true)}".replace("\n", "")
                 scmVars.GIT_PREVIOUS_COMMIT = PREVIOUS_COMMIT
             }
             scmVars.GIT_BRANCH = FULL_PATH_BRANCH
