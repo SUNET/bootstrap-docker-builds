@@ -5,7 +5,7 @@ import java.io.IOException
 import jenkins.model.Jenkins
 
 
-def orgs = ['SUNET','TheIdentitySelector']
+def orgs = ['SUNET','TheIdentitySelector', 'Sciebo-RDS']
 def api = "https://api.github.com"
 
 if (binding.hasVariable("ORGS") && "${ORGS}" != "") {
