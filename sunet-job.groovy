@@ -629,6 +629,8 @@ def runJob(job_env) {
                     docker_build_and_publish["dockerFileDirectory"] = job_env.docker_context_dir
                 if (job_env.docker_dockerfile_dir != null)
                     docker_build_and_publish["dockerFileDirectory"] = job_env.docker_dockerfile_dir
+                if (job_env.docker_build_args != null)
+                    docker_build_and_publish["buildArgsString"] = job_env.docker_build_args
                 /* No corresponding functionallity in docker-plugin
                 dockerBuildAndPublish {
                     forceTag(_get_bool(job_env.docker_force_tag, false))

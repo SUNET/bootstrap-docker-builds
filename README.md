@@ -139,6 +139,8 @@ docker_name: sunet/name_of_repo
 docker_tags: []
 # Set Dockerfile directory
 docker_dockerfile_dir: "."
+# A list of new line separated build-time variables, specified in the form "name=value".
+docker_build_args: ~
 # Force rebuild
 docker_no_cache: true
 # Update the source image before build
