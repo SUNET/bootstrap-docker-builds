@@ -624,8 +624,11 @@ def runJob(job_env) {
                         pull               : (env.DEV_MODE?.toBoolean() ? false : _get_bool(job_env.docker_force_pull, true)),
                         noCache            : (_get_bool(job_env.docker_no_cache, true)),
                 ]
+                /* keep docker_context_dir for backwards compatibility */
                 if (job_env.docker_context_dir != null)
                     docker_build_and_publish["dockerFileDirectory"] = job_env.docker_context_dir
+                if (job_env.docker_dockerfile_dir != null)
+                    docker_build_and_publish["dockerFileDirectory"] = job_env.docker_dockerfile_dir
                 /* No corresponding functionallity in docker-plugin
                 dockerBuildAndPublish {
                     forceTag(_get_bool(job_env.docker_force_tag, false))

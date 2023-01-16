@@ -137,8 +137,8 @@ docker_name: sunet/name_of_repo
 # Tags that should be used
 # "git-\${GIT_REVISION,length=8}", "ci-${env.name}-\${BUILD_NUMBER}" and "latest" will always be set
 docker_tags: []
-# Set docker context directory if different from repo root
-docker_context_dir: ~
+# Set Dockerfile directory
+docker_dockerfile_dir: "."
 # Force rebuild
 docker_no_cache: true
 # Update the source image before build
