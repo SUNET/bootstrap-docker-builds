@@ -59,6 +59,7 @@ def repo_must_be_signed(full_name) {
     def repo_must_be_signed = [:].withDefault { false }
     repo_must_be_signed["SUNET/docker-jenkins"] = true
     repo_must_be_signed["SUNET/docker-jenkins-job"] = true
+    repo_must_be_signed["SUNET/drive-collabora"] = true
 
     return repo_must_be_signed[full_name]
 }
