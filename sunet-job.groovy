@@ -276,11 +276,6 @@ for (job in extra_jobs) {
     }
 
     pipeline_job.with {
-        wrappers {
-            credentialsBinding {
-                string(credentialsId: 'COLLABORA_URL_FRAGMENT', variable: 'COLLABORA_URL_FRAGMENT')
-            }
-        }
         environmentVariables {
             env("FULL_NAME", "${FULL_NAME}")
             env("DEFAULT_BRANCH", "${DEFAULT_BRANCH}")
@@ -580,6 +575,7 @@ def runJob(job_env) {
         }
         if (job_env.builders.contains("docker")) {
             stage("builder docker") {
+
                 if (_managed_script_enabled(job_env, 'docker_build_prep.sh')) {
                     echo("Managed script docker_build_prep.sh enabled.")
                     configFileProvider([configFile(fileId: 'docker_build_prep.sh', variable: 'DOCKER_BUILD_PREP')]) {
@@ -643,7 +639,9 @@ def runJob(job_env) {
                     forcePull(false)
                     createFingerprints(_get_bool(job_env.docker_create_fingerprints, true))
                 }*/
-                step(docker_build_and_publish)
+                withCredentials([string(credentialsId: 'COLLABORA_URL_FRAGMENT', variable: 'COLLABORA_URL_FRAGMENT')]) {
+                    step(docker_build_and_publish)
+                }
             }
         }
         if (job_env.post_build_script != null) {
