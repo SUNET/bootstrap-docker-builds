@@ -276,6 +276,11 @@ for (job in extra_jobs) {
     }
 
     pipeline_job.with {
+        wrappers {
+            credentialsBinding {
+                string(credentialsId: 'COLLABORA_URL_FRAGMENT', variable: 'COLLABORA_URL_FRAGMENT')
+            }
+        }
         environmentVariables {
             env("FULL_NAME", "${FULL_NAME}")
             env("DEFAULT_BRANCH", "${DEFAULT_BRANCH}")
