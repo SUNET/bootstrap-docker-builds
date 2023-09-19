@@ -639,9 +639,7 @@ def runJob(job_env) {
                     forcePull(false)
                     createFingerprints(_get_bool(job_env.docker_create_fingerprints, true))
                 }*/
-                withCredentials([string(credentialsId: 'COLLABORA_URL_FRAGMENT', variable: 'COLLABORA_URL_FRAGMENT')]) {
-                    step(docker_build_and_publish)
-                }
+                step(docker_build_and_publish)
             }
         }
         if (job_env.post_build_script != null) {
