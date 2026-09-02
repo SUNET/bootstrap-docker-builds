@@ -582,11 +582,11 @@ def runJob(job_env) {
                         sh 'chmod +x "$DOCKER_BUILD_PREP" ; "$DOCKER_BUILD_PREP"'
                     }
                 }
-                tags = ["git-${scmVars.GIT_COMMIT[0..8]}", "ci-${job_env.name}-${BUILD_NUMBER}"]
+                def tags = ["git-${scmVars.GIT_COMMIT[0..8]}", "ci-${job_env.name}-${BUILD_NUMBER}"]
                 if (job_env.docker_tags != null)
                     // Expand docker_tags
                     job_env.docker_tags.each { item ->
-                        tag = env.getEnvironment().expand(item)
+                        def tag = env.getEnvironment().expand(item)
                         tags.add(tag)
                     }
                 echo("Docker tags:")
